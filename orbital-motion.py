@@ -107,23 +107,49 @@ class CelestialBody(object):
 
 class Simulation(object):
 
-    def __init__(self, iterations, step, G, scale_factor, animation_step, limits):
-        self.limits = limits
-        self.animation_step = animation_step
-        self.scale_factor = scale_factor
-        self.iterations = iterations
-        self.step = step
-        self.G = G
+    def __init__(self, database):
         self.bodies = []
         self.min_kin = 1e500
+        self.database = database
+        self.scale_factor = 0 #scale_factor
+        self.counter = 0
+        self.spacing = 500
+
+    def read_file(self, read_bodies):
+
+        # collect strings from database file
+        file = open(self.database, "r")
+        lines = file.readlines()
+        file.close()
+
+        # format and turn columns from database into celestial body objects
+        for index, line in enumerate(lines):
+            if len(line.strip()) > 0 and line.strip()[0] != "#": # ignore #s and empty lines
+                column = line.split(",")
+                if index == 1: # read constructor data from first line
+                    self.iterations = int(column[0].strip())
+                    self.step = float(column[1].strip())
+                    self.G = float(column[2].strip()) * 1e-11
+                    self.scale_factor = float(column[3].strip())
+                    self.animation_step = int(column[4].strip())
+                    self.limits = int(column[5].strip())
+                elif read_bodies: # determine properties of body
+                    name = column[0].strip().capitalize()
+                    mass = float(column[1].strip()) * np.sqrt(self.scale_factor)
+                    position = Vec2D(float(column[2].strip()), float(column[3].strip()))
+                    velocity = Vec2D(0, 0) # initalized within update_body_properties function, easier to calculate there
+                    color = "#" + column[4].strip()
+                    size = float(column[5].strip())
+                    self.bodies.append(CelestialBody(name, mass, position, velocity, color, size))
+
 
     def define_bodies(self):
-        # # eventually read from file, but for now hardcoded
+
+        self.read_file(True)
+        # determine the center (for use cases where the center doesn't move)
         self.center = "Mars"
-        self.bodies.append(CelestialBody(self.center, 6.4185e23 * self.scale_factor ** 9, Vec2D(0, 0), Vec2D(0, 0), 'r', 3389500 / self.scale_factor * 5))
-        self.bodies.append(CelestialBody("Phobos", 1.06e16 * self.scale_factor ** 9, Vec2D(9.3773e6, 0), Vec2D(0, 0), 'b', 11267 / self.scale_factor * 150))
-        self.bodies.append(CelestialBody("Deimos", 1.80e15 * self.scale_factor ** 9, Vec2D(23.463e6, 0), Vec2D(0, 0), 'g', 6200 / self.scale_factor * 150))
-        
+
+        # here you can manually append bodies to the system
         # self.center = "Sun"
         # self.bodies.append(CelestialBody(self.center, 10000 * 1e7 * self.scale_factor, Vec2D(0, 0), Vec2D(0, 0), '#FDB813', 10))
         # self.bodies.append(CelestialBody("Mercury", 1 * 1e7, Vec2D(15, 0), Vec2D(0, 0), '#68696d', 1))
@@ -168,7 +194,7 @@ class Simulation(object):
         return net
 
     def kinetic_energy(self, body): # simple kinetic energy calculation for a body
-        return 0.5 * body.get_mass() * abs(body.get_velocity()) ** 2
+        return 0.5 * body.get_mass() / np.sqrt(self.scale_factor) * abs(body.get_velocity()) ** 2
 
     def update_body_properties(self): # update and set all states during one iteration of the animation / calculation
 
@@ -225,7 +251,10 @@ class Simulation(object):
 
         #print("Minimum kinetic energy of system: " + str(self.min_kin))
 
-        print("Total kinetic energy of system: " + str(total_kinetic_energy))
+        if self.counter % self.spacing == 0: #used for delaying the printing of total kinetic energy
+            print("Total kinetic energy of system: " + str(total_kinetic_energy))
+
+        self.counter += 1 # loop counter must increment every iteration
 
         return patches # iterable patch object for animate function, refreshed every iteration
 
@@ -267,9 +296,9 @@ class Simulation(object):
         # iterate objects
         #self.iterate()
 
-# limits: 23.463e6 * 3 for Mars, 300 for Solar System
-# scales: 5e0 for Mars, 1e3 for Solar System
+# in the database, you can modify the system from the Mars only example to the whole solar system
+# limits: 70389000 for Mars, 300 for Solar System
+# scale factors: 500000000 for Mars, 100 for Solar System
 
-#  iterations, step, G, scale_factor, animation_step, limits
-sim = Simulation(1000, 0.1, 6.67408e-11, 5e0, 1, 23.463e6 * 3)
+sim = Simulation("/home/s1811125/Desktop/database.txt")
 sim.run()

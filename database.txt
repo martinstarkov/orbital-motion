@@ -1,0 +1,6 @@
+# iterations, step, G, scale factor, animation step, limits
+1000, 0.1, 6.67408, 500000000, 1, 70389000
+# name, mass, x-position, y-position, color, size
+Mars, 641850000000000000000000, 0, 0, FF2D00, 3389500
+Phobos, 10600000000000000, 9377300, 0, 0000FF, 338010
+Deimos, 1800000000000000, 23463000, 0, 19D616, 186000
