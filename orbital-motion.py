@@ -300,5 +300,5 @@ class Simulation(object):
 # limits: 70389000 for Mars, 300 for Solar System
 # scale factors: 500000000 for Mars, 100 for Solar System
 
-sim = Simulation("/home/s1811125/Desktop/database.txt")
+sim = Simulation("database.txt")
 sim.run()
