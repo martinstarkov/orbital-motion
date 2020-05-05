@@ -107,18 +107,28 @@ class CelestialBody(object):
 
 class Simulation(object):
 
-    def __init__(self, database):
+    def __init__(self):
         self.bodies = []
         self.min_kin = 1e500
-        self.database = database
         self.scale_factor = 0 #scale_factor
         self.counter = 0
         self.spacing = 500
 
     def read_file(self, read_bodies):
+        try:
+            # collect strings from database file
+            import os
+            basepath = os.path.dirname(os.path.realpath(__file__))
+            path = ""
+            for entry in os.listdir(basepath):
+                if os.path.isfile(os.path.join(basepath, entry)):
+                    if entry.endswith(".txt"):
+                        path = basepath + "\\" + entry
+            file = open(path, "r")
+        except:
+            print("Could not find database text file in current directory: " + str(basepath))
+            raise SystemExit
 
-        # collect strings from database file
-        file = open(self.database, "r")
         lines = file.readlines()
         file.close()
 
@@ -148,20 +158,6 @@ class Simulation(object):
         self.read_file(True)
         # determine the center (for use cases where the center doesn't move)
         self.center = "Mars"
-
-        # here you can manually append bodies to the system
-        # self.center = "Sun"
-        # self.bodies.append(CelestialBody(self.center, 10000 * 1e7 * self.scale_factor, Vec2D(0, 0), Vec2D(0, 0), '#FDB813', 10))
-        # self.bodies.append(CelestialBody("Mercury", 1 * 1e7, Vec2D(15, 0), Vec2D(0, 0), '#68696d', 1))
-        # self.bodies.append(CelestialBody("Venus", 100 * 1e7, Vec2D(20, 0), Vec2D(0, 0), '#8B7D82', 2))
-        # self.bodies.append(CelestialBody("Earth", 123 * 1e7, Vec2D(30, 0), Vec2D(0, 0), '#9fc164', 3))
-        # self.bodies.append(CelestialBody("Mars", 1 * 1e7, Vec2D(45, 0), Vec2D(0, 0), '#c1440e', 2.5))
-        # self.bodies.append(CelestialBody("Jupiter", 500 * 1e7, Vec2D(80, 0), Vec2D(0, 0), '#c99039', 7))
-        # self.bodies.append(CelestialBody("Neptune", 200 * 1e7, Vec2D(105, 0), Vec2D(0, 0), '#3f54ba', 4))
-        # self.bodies.append(CelestialBody("Saturn", 400 * 1e7, Vec2D(125, 0), Vec2D(0, 0), '#D8B763', 6))
-        # self.bodies.append(CelestialBody("Uranus", 150 * 1e7, Vec2D(140, 0), Vec2D(0, 0), '#85addb', 4))
-
-        pass
 
     def integrate(self, current, factor): # numerical intergration using Euler-Cromer
         return current + factor.multiply(self.step)
@@ -201,22 +197,15 @@ class Simulation(object):
         total_kinetic_energy = 0
 
         for body in self.bodies: # find all vel / accels
-
             pos = body.get_position()
             vel = Vec2D(0, 0)
-
             # set initial velocity
-            if body.get_velocity().isZero(): 
-                # if requested that velocity only takes into account central object: 
-                # if body.get_name() != self.center:
-                #     vel = self.find_vel(body, self.find_body(self.center))
-                # otherwise, take into account all objects: 
+            if body.get_velocity().isZero():
                 vel = self.net_property(body, "vel")
             else:
                 vel = body.get_velocity()
 
             accel = self.net_property(body, "accel") # net acceleration
-
             next_vel = self.integrate(vel, accel) # velocity numerical integration
 
             # keep central body still (optional, can be commented out)
@@ -289,16 +278,8 @@ class Simulation(object):
 
         # define initial conditions for bodies
         self.define_bodies()
-
         # iterate and animate objects
         self.display()
 
-        # iterate objects
-        #self.iterate()
-
-# in the database, you can modify the system from the Mars only example to the whole solar system
-# limits: 70389000 for Mars, 300 for Solar System
-# scale factors: 500000000 for Mars, 100 for Solar System
-
-sim = Simulation("database.txt")
+sim = Simulation()
 sim.run()
